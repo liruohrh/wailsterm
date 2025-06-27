@@ -3,7 +3,7 @@ name: Build and Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 jobs:
   build:
@@ -28,12 +28,12 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: "1.21"
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: "18"
 
       - name: Install Wails CLI
         run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
@@ -42,7 +42,7 @@ jobs:
         run: cd frontend && npm install
 
       - name: Build Wails app
-        run: wails build -platform ${{ matrix.platform }} -output ${{ matrix.output }}
+        run: wails build -platform ${{ matrix.platform }} -o ${{ matrix.output }}
 
       - name: Create Draft Release
         uses: softprops/action-gh-release@v1

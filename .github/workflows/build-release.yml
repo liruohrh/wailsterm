@@ -1,54 +1,41 @@
-name: Build and Release
+name: Wails build
 
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_dispatch:
+
+env:
+  # Necessary for most environments as build failure can occur due to OOM issues
+  NODE_OPTIONS: "--max-old-space-size=4096"
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
     strategy:
+      # Failure in one platform build won't impact the others
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        include:
-          - os: ubuntu-latest
-            platform: linux/amd64
-            output: WailsTerm-linux
-          - os: windows-latest
-            platform: windows/amd64
-            output: WailsTerm-windows.exe
-          - os: macos-latest
-            platform: darwin/universal
-            output: WailsTerm-macos
+        build:
+          - name: "App"
+            platform: "linux/amd64"
+            os: "ubuntu-latest"
+          - name: "App"
+            platform: "windows/amd64"
+            os: "windows-latest"
+          - name: "App"
+            platform: "darwin/universal"
+            os: "macos-latest"
 
+    runs-on: ${{ matrix.build.os }}
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - name: Checkout
+        uses: actions/checkout@v2
         with:
-          go-version: "1.21"
+          submodules: recursive
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - name: Build wails
+        uses: dAppServer/wails-build-action@v2.2
+        id: build
         with:
-          node-version: "18"
-
-      - name: Install Wails CLI
-        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.9.2
-
-      - name: Build frontend dependencies
-        run: cd frontend && npm install
-
-      - name: Build Wails app
-        run: wails build -platform ${{ matrix.platform }} -o ${{ matrix.output }}
-
-      - name: Create Draft Release
-        uses: softprops/action-gh-release@v1
-        with:
-          name: WailsTerm ${{ github.ref_name }}
-          draft: true
-          files: ${{ matrix.output }}*
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          build-name: ${{ matrix.build.name }}
+          build-platform: ${{ matrix.build.platform }}
+          package: false
+          go-version: "1.23.3"

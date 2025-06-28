@@ -1,47 +1,70 @@
-name: Wails build
+name: Wails Build
+
 on:
   workflow_dispatch:
+
 env:
   NODE_OPTIONS: "--max-old-space-size=4096"
+
 jobs:
   build:
     strategy:
       fail-fast: false
       matrix:
         build:
-          - name: "WailsTerm-linux"
-            platform: "linux/amd64"
+          - platform: "linux/amd64"
             os: "ubuntu-latest"
-            ext: ""
-          - name: "WailsTerm-windows"
-            platform: "windows/amd64"
+          - platform: "windows/amd64"
             os: "windows-latest"
-            ext: ".exe"
-          - name: "WailsTerm-macos"
-            platform: "darwin/universal"
+          - platform: "darwin/universal"
             os: "macos-latest"
-            ext: ".app.zip" # or .pkg if  package it
+
     runs-on: ${{ matrix.build.os }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Read app name from wails.json
+        id: meta
+        run: |
+          echo "APPNAME=$(jq -r '.name' wails.json)" >> "$GITHUB_OUTPUT"
+        shell: bash
+
       - name: Build wails
         uses: dAppServer/wails-build-action@main
-        id: build
         with:
-          build-name: ${{ matrix.build.name }}
+          build-name: ${{ steps.meta.outputs.APPNAME }}
           build-platform: ${{ matrix.build.platform }}
           package: false
           sign: false
           go-version: "1.23.3"
           wails-version: "v2.9.2"
           node-version: "20.10.0"
+
+      - name: Set release filename
+        id: file
+        run: |
+          APPNAME="${{ steps.meta.outputs.APPNAME }}"
+          case "${{ matrix.build.os }}" in
+            ubuntu-*)
+              echo "FILENAME=build/bin/$APPNAME" >> "$GITHUB_OUTPUT"
+              ;;
+            windows-*)
+              echo "FILENAME=build/bin/$APPNAME.exe" >> "$GITHUB_OUTPUT"
+              ;;
+            macos-*)
+              ditto -c -k --keepParent "build/bin/$APPNAME.app" "build/bin/$APPNAME.app.zip"
+              echo "FILENAME=build/bin/$APPNAME.app.zip" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+        shell: bash
+
       - name: Create Draft Release
         uses: softprops/action-gh-release@v1
         with:
           draft: true
           name: WailsTerm ${{ github.ref_name }}
-          files: |
-            build/bin/${{ matrix.build.name }}${{ matrix.build.ext }}
+          files: ${{ steps.file.outputs.FILENAME }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -34,7 +34,7 @@ jobs:
           package: false
           sign: false
           go-version: "1.23.3"
-          wails-version: "2.9.2"
+          wails-version: "v2.9.2"
           node-version: "20.10.0"
       - name: Create Draft Release
         uses: softprops/action-gh-release@v1

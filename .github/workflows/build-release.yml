@@ -32,7 +32,7 @@ jobs:
           GO_OUTPUT=$(jq -r '.name' wails.json)
           if [[ "${{ runner.os }}" == "Windows" ]]; then
             FILENAME="$GO_OUTPUT.exe"
-            GO_OUTPUT=FILENAME
+            GO_OUTPUT=$FILENAME
           elif [[ "${{ runner.os }}" == "macOS" ]]; then
             FILENAME="$GO_OUTPUT.app.zip"
           else

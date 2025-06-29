@@ -1,7 +1,11 @@
-name: Wails Build
+name: Wails Build Debug
 
 on:
   workflow_dispatch:
+
+env:
+  NODE_OPTIONS: "--max-old-space-size=4096"
+  BUILD_OPTIONS: "-debug"
 
 jobs:
   build:
